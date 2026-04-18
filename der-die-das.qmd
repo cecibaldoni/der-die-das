@@ -1,0 +1,399 @@
+---
+title: ""
+format:
+  html:
+    theme: styles.scss
+    self-contained: true
+    page-layout: full
+    toc: false
+    footer: 2026 - [Cecilia Baldoni](cecibaldoni.github.io)
+execute:
+  echo: false
+---
+
+```{r}
+#| output: asis
+
+# ── Load words ─────────────────────────────────────────────────────────────────
+words <- read.csv("words.csv", stringsAsFactors = FALSE, na.strings = "")
+words[is.na(words$rule), "rule"] <- ""
+
+
+rules_meta <- list(
+  # der rules
+  er_m      = list(label = "-er → der",     article = "der", note = "common, some exceptions"),
+  er_f_exc  = list(label = "-er exception", article = "die", note = "exception: die"),
+  er_n_exc  = list(label = "-er exception", article = "das", note = "exception: das"),
+  en_m      = list(label = "-en → der",     article = "der", note = "often"),
+  el_m      = list(label = "-el → der",     article = "der", note = "often"),
+  ig        = list(label = "-ig → der",     article = "der", note = "often"),
+  ich       = list(label = "-ich → der",    article = "der", note = "often"),
+  ling      = list(label = "-ling → der",   article = "der", note = "100% reliable"),
+  ent       = list(label = "-ent → der",    article = "der", note = "N-Deklination"),
+  ant       = list(label = "-ant → der",    article = "der", note = "N-Deklination"),
+  ist       = list(label = "-ist → der",    article = "der", note = "N-Deklination"),
+  or_m      = list(label = "-or → der",     article = "der", note = "often"),
+  ismus     = list(label = "-ismus → der",  article = "der", note = "100% reliable"),
+  # die rules
+  ung       = list(label = "-ung → die",    article = "die", note = "100% reliable"),
+  heit      = list(label = "-heit → die",   article = "die", note = "100% reliable"),
+  keit      = list(label = "-keit → die",   article = "die", note = "100% reliable"),
+  schaft    = list(label = "-schaft → die", article = "die", note = "100% reliable"),
+  taet      = list(label = "-tät → die",    article = "die", note = "100% reliable"),
+  tion      = list(label = "-tion/-sion → die", article = "die", note = "100% reliable"),
+  ik        = list(label = "-ik → die",     article = "die", note = "often"),
+  ie        = list(label = "-ie → die",     article = "die", note = "often"),
+  ei        = list(label = "-ei → die",     article = "die", note = "often"),
+  ur        = list(label = "-ur → die",     article = "die", note = "often"),
+  e_f       = list(label = "-e → die",      article = "die", note = "many, some exceptions"),
+  e_m_exc   = list(label = "-e exception",  article = "der", note = "exception: der"),
+  e_n_exc   = list(label = "-e exception",  article = "das", note = "exception: das"),
+  # das rules
+  chen      = list(label = "-chen → das",   article = "das", note = "100% reliable"),
+  lein      = list(label = "-lein → das",   article = "das", note = "100% reliable"),
+  um        = list(label = "-um → das",     article = "das", note = "100% reliable"),
+  ment      = list(label = "-ment → das",   article = "das", note = "often"),
+  ma        = list(label = "-ma → das",     article = "das", note = "often"),
+  nis       = list(label = "-nis → das",    article = "das", note = "mostly, some exceptions"),
+  nis_f_exc = list(label = "-nis exception",article = "die", note = "exception: die"),
+  tum       = list(label = "-tum → das",    article = "das", note = "mostly, some exceptions"),
+  tum_m_exc = list(label = "-tum exception",article = "der", note = "exception: der"),
+  ge_prefix = list(label = "Ge- → das",     article = "das", note = "often"),
+  ge_m_exc  = list(label = "Ge- exception", article = "der", note = "exception: der"),
+  ge_f_exc  = list(label = "Ge- exception", article = "die", note = "exception: die"),
+  ing_loan  = list(label = "-ing → das",    article = "das", note = "English loanwords")
+)
+
+# Serialise to JSON 
+word_to_json <- function(row) {
+  rule <- row[["rule"]]
+  meta <- rules_meta[[rule]]
+  rule_label   <- if (!is.null(meta)) meta$label   else ""
+  rule_article <- if (!is.null(meta)) meta$article else ""
+  rule_note    <- if (!is.null(meta)) meta$note    else ""
+  sprintf(
+    '{"article":"%s","word":"%s","meaning":"%s","rule":"%s","ruleLabel":"%s","ruleArticle":"%s","ruleNote":"%s"}',
+    row[["article"]], row[["word"]], row[["meaning"]],
+    rule, rule_label, rule_article, rule_note
+  )
+}
+
+json_words <- paste0(
+  "[",
+  paste(apply(words, 1, word_to_json), collapse = ","),
+  "]"
+)
+
+cat(sprintf("<script>const WORDS = %s;</script>\n", json_words))
+```
+
+```{=html}
+<!-- ══════════════════════════════════════════════════════════════════════════
+     START SCREEN
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="screen" id="start-screen">
+
+  <div class="wordmark">
+    <h1>
+      <span class="w-der">Der</span><span class="w-dot">·</span><span class="w-die">Die</span><span class="w-dot">·</span><span class="w-das">Das</span>
+    </h1>
+    <p>German Article Trainer</p>
+  </div>
+
+  <p class="level-label">Choose your level</p>
+
+  <div class="levels">
+
+    <button class="level-card selected" data-level="beginner" onclick="selectLevel(this)">
+      <span class="level-icon">🌱</span>
+      <div class="level-info">
+        <div class="level-name">Beginner</div>
+        <div class="level-desc">Card colour + rule label both shown</div>
+        <div class="level-hints">
+          <span class="hint-pill on">Colour hint</span>
+          <span class="hint-pill on">Rule label</span>
+        </div>
+      </div>
+    </button>
+
+    <button class="level-card" data-level="intermediate" onclick="selectLevel(this)">
+      <span class="level-icon">🌿</span>
+      <div class="level-info">
+        <div class="level-name">Intermediate</div>
+        <div class="level-desc">Card colour only — no label</div>
+        <div class="level-hints">
+          <span class="hint-pill on">Colour hint</span>
+          <span class="hint-pill off">Rule label</span>
+        </div>
+      </div>
+    </button>
+
+    <button class="level-card" data-level="advanced" onclick="selectLevel(this)">
+      <span class="level-icon">🌻</span>
+      <div class="level-info">
+        <div class="level-name">Advanced</div>
+        <div class="level-desc">No hints — at all</div>
+        <div class="level-hints">
+          <span class="hint-pill off">Colour hint</span>
+          <span class="hint-pill off">Rule label</span>
+        </div>
+      </div>
+    </button>
+
+  </div>
+
+  <button class="start-btn" onclick="startGame()">Start →</button>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     GAME SCREEN
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="screen hidden" id="game-screen">
+
+  <div class="top-bar">
+    <button class="back-btn" onclick="goBack()">← levels</button>
+    <span class="level-badge" id="level-badge">Beginner</span>
+  </div>
+
+  <div class="scorebar">
+    <div class="score-cell">
+      <span class="sc-label">Correct</span>
+      <span class="sc-val correct" id="val-correct">0</span>
+    </div>
+    <div class="score-cell">
+      <span class="sc-label">Streak 🔥</span>
+      <span class="sc-val streak" id="val-streak">0</span>
+    </div>
+    <div class="score-cell">
+      <span class="sc-label">Wrong</span>
+      <span class="sc-val wrong" id="val-wrong">0</span>
+    </div>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-bar" id="progress-bar" style="width:0%"></div>
+  </div>
+
+  <div class="word-card" id="word-card">
+    <span class="rule-badge" id="rule-badge"></span>
+    <span class="word-text" id="word-display">…</span>
+    <div class="word-meaning" id="word-meaning"></div>
+    <div class="word-feedback" id="word-feedback"></div>
+  </div>
+
+  <div class="article-buttons">
+    <button class="art-btn btn-der" id="btn-der" onclick="guess('der')">
+      <span class="art-label">der</span>
+      <span class="art-sub">masculine</span>
+    </button>
+    <button class="art-btn btn-die" id="btn-die" onclick="guess('die')">
+      <span class="art-label">die</span>
+      <span class="art-sub">feminine</span>
+    </button>
+    <button class="art-btn btn-das" id="btn-das" onclick="guess('das')">
+      <span class="art-label">das</span>
+      <span class="art-sub">neuter</span>
+    </button>
+  </div>
+
+  <button class="next-btn" id="next-btn" onclick="nextWord()">Next →</button>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     END SCREEN
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="screen hidden" id="end-screen">
+
+  <div class="wordmark" style="margin-bottom:32px">
+    <h1>
+      <span class="w-der">Der</span><span class="w-dot">·</span><span class="w-die">Die</span><span class="w-dot">·</span><span class="w-das">Das</span>
+    </h1>
+  </div>
+
+  <p class="end-title" id="end-title">Fertig!</p>
+  <p class="end-sub">Round complete</p>
+
+  <span class="end-score" id="end-score">0</span>
+  <p class="end-total"   id="end-total">out of 0 words</p>
+  <p class="end-msg"     id="end-msg"></p>
+
+  <div class="end-actions">
+    <button class="replay-btn"       onclick="replayGame()">Play again ↺</button>
+    <button class="change-level-btn" onclick="goToStart()">Change level</button>
+  </div>
+
+</div>
+
+<footer class="game-footer">
+  <p>&copy; 2026 <a href="https://cecibaldoni.github.io/" target="_blank">Cecilia Baldoni</a></p>
+</footer>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────────
+let deck     = [];
+let current  = null;
+let answered = false;
+let correct  = 0;
+let wrong    = 0;
+let streak   = 0;
+let total    = 0;
+let level    = 'beginner';
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function show(id) {
+  ['start-screen', 'game-screen', 'end-screen'].forEach(s =>
+    document.getElementById(s).classList.toggle('hidden', s !== id)
+  );
+}
+
+// ── Level selection ────────────────────────────────────────────────────────────
+function selectLevel(btn) {
+  document.querySelectorAll('.level-card').forEach(c => c.classList.remove('selected'));
+  btn.classList.add('selected');
+  level = btn.dataset.level;
+}
+
+// ── Start / restart ────────────────────────────────────────────────────────────
+function startGame() {
+  const badge = document.getElementById('level-badge');
+  badge.textContent = level.charAt(0).toUpperCase() + level.slice(1);
+  badge.className   = 'level-badge ' + level;
+  show('game-screen');
+  resetAndDeal();
+}
+
+function replayGame() { startGame(); }
+function goBack()     { show('start-screen'); }
+function goToStart()  { show('start-screen'); }
+
+function resetAndDeal() {
+  deck = shuffle([...WORDS]);
+  correct = 0; wrong = 0; streak = 0; total = 0;
+  answered = false;
+  updateScore();
+  loadWord();
+}
+
+// ── Word loading ───────────────────────────────────────────────────────────────
+function loadWord() {
+  if (deck.length === 0) { showEnd(); return; }
+  current  = deck.pop();
+  answered = false;
+
+  document.getElementById('word-display').textContent = current.word;
+  document.getElementById('word-meaning').textContent = '';
+
+  const fb = document.getElementById('word-feedback');
+  fb.className   = 'word-feedback';
+  fb.textContent = '';
+
+  document.getElementById('next-btn').classList.remove('visible');
+
+  // Reset buttons
+  ['der', 'die', 'das'].forEach(a => {
+    const b = document.getElementById('btn-' + a);
+    b.disabled      = false;
+    b.className     = 'art-btn btn-' + a;
+    b.style.opacity = '1';
+  });
+
+  // Card tint (Beginner + Intermediate)
+  const card = document.getElementById('word-card');
+  card.className = 'word-card';
+  if (level !== 'advanced' && current.ruleArticle) {
+    card.classList.add('tint-' + current.ruleArticle);
+  }
+
+  // Rule badge (Beginner only)
+  const badge = document.getElementById('rule-badge');
+  badge.textContent = '';
+  badge.className   = 'rule-badge';
+  if (level === 'beginner' && current.ruleLabel) {
+    const noteStr = current.ruleNote ? ' · ' + current.ruleNote : '';
+    badge.textContent = current.ruleLabel + noteStr;
+    badge.className   = 'rule-badge ' + current.ruleArticle + ' visible';
+  }
+
+  updateProgress();
+}
+
+// ── Guess ──────────────────────────────────────────────────────────────────────
+function guess(article) {
+  if (answered) return;
+  answered = true;
+  total++;
+
+  const fb   = document.getElementById('word-feedback');
+  const card = document.getElementById('word-card');
+
+  ['der', 'die', 'das'].forEach(a => {
+    document.getElementById('btn-' + a).disabled = true;
+    if (a !== article) document.getElementById('btn-' + a).style.opacity = '0.3';
+  });
+
+  if (article === current.article) {
+    correct++;
+    streak++;
+    document.getElementById('btn-' + article).classList.add('flash-correct');
+    fb.textContent = '✓ Richtig!';
+    fb.className   = 'word-feedback show right';
+    document.getElementById('word-meaning').textContent = current.meaning;
+  } else {
+    wrong++;
+    streak = 0;
+    document.getElementById('btn-' + article).classList.add('flash-wrong');
+    card.classList.add('shake');
+    setTimeout(() => card.classList.remove('shake'), 500);
+    document.getElementById('btn-' + current.article).style.opacity = '1';
+    document.getElementById('btn-' + current.article).classList.add('flash-correct');
+    fb.textContent = '✗  ' + current.article + ' ' + current.word + ' — ' + current.meaning;
+    fb.className   = 'word-feedback show wrong';
+  }
+
+  updateScore();
+  updateProgress();
+  document.getElementById('next-btn').classList.add('visible');
+}
+
+function nextWord() { loadWord(); }
+
+// ── Score & progress ───────────────────────────────────────────────────────────
+function updateScore() {
+  document.getElementById('val-correct').textContent = correct;
+  document.getElementById('val-wrong').textContent   = wrong;
+  document.getElementById('val-streak').textContent  = streak;
+}
+
+function updateProgress() {
+  const pct = WORDS.length ? (total / WORDS.length) * 100 : 0;
+  document.getElementById('progress-bar').style.width = pct + '%';
+}
+
+// ── End screen ─────────────────────────────────────────────────────────────────
+function showEnd() {
+  const pct   = WORDS.length ? Math.round((correct / WORDS.length) * 100) : 0;
+  const emoji = pct === 100 ? '🌟' : pct >= 80 ? '🎉' : pct >= 60 ? '👍' : '💪';
+  const msg   = pct === 100 ? 'Perfect — ausgezeichnet!'
+              : pct >= 80   ? 'Sehr gut! Nearly there.'
+              : pct >= 60   ? 'Gut! Keep practising.'
+              :               'Weitermachen — you\'ll get there!';
+
+  document.getElementById('end-title').textContent = 'Fertig! ' + emoji;
+  document.getElementById('end-score').textContent = correct;
+  document.getElementById('end-total').textContent = 'out of ' + WORDS.length + ' words';
+  document.getElementById('end-msg').textContent   = msg;
+  show('end-screen');
+}
+
+</script>
+```
