@@ -55,11 +55,11 @@ body {
   font-family: $font-body;
   background: $bg;
   color: $text;
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  overflow: hidden;
+  overflow-x: hidden;
   background-image:
     linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
@@ -74,6 +74,8 @@ body {
 .screen {
   width: 100%;
   max-width: 460px;
+  min-height: 100vh;
+  height: auto;
   flex: 1; 
   display: flex;
   flex-direction: column;
@@ -83,6 +85,18 @@ body {
   overflow-y: auto; 
 
   &.hidden { display: none; }
+}
+
+#start-screen {
+  justify-content: flex-start;  // ← was: center
+  padding-top: 10vh;            // ← relative to screen height, not fixed px
+  
+  .wordmark { margin-bottom: clamp(24px, 5vh, 48px); }  // ← shrinks on small screens
+  
+  .levels {
+    margin-bottom: clamp(20px, 4vh, 40px);               // ← same idea
+    gap: clamp(8px, 1.5vh, 12px);                        // ← tighter gaps when needed
+  }
 }
 
 // ── Wordmark ───────────────────────────────────────────────────────────────────
@@ -112,38 +126,11 @@ body {
   }
 }
 
-// ════════════════════════════════════════════════════════════════════════════════
-// START SCREEN
-// ════════════════════════════════════════════════════════════════════════════════
-#start-screen {
-  justify-content: center;
-
-  .wordmark { margin-bottom: 48px; }
-
-  .level-label {
-    font-size: 0.65rem;
-    letter-spacing: 4px;
-    text-transform: uppercase;
-    color: $text-muted;
-    margin-bottom: 16px;
-    align-self: flex-start;
-  }
-
-  .levels {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-bottom: 40px;
-  }
-}
-
 .level-card {
   width: 100%;
   background: $surface;
   border: 1px solid $border;
   border-radius: $radius-lg;
-  padding: 20px 24px;
   display: flex;
   align-items: center;
   gap: 18px;
@@ -152,6 +139,7 @@ body {
   position: relative;
   overflow: hidden;
   text-align: left;
+  padding: clamp(14px, 2.5vh, 20px) 24px;
 
   &::before {
     content: '';
@@ -254,7 +242,7 @@ body {
     padding: 6px 0;
     transition: color 0.15s;
     -webkit-tap-highlight-color: transparent;
-    &:hover { color: $text-muted; }
+    &:hover { color: $text; }
   }
 
   .level-badge {
